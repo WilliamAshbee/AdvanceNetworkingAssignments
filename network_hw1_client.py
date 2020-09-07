@@ -1,75 +1,82 @@
-#!/usr/bin/env python3
-#code built upon from https://github.com/realpython/materials/blob/master/python-sockets-tutorial/multiconn-client.py
-#tutorial at https://realpython.com/python-sockets/
-
-import sys
 import socket
-import selectors
-import types
+import select
+import errno
 
-sel = selectors.DefaultSelector()
-messages = [b"Message 1 from client.", b"Message 2 from client."]
+HEADER_LENGTH = 10
 
+IP = "127.0.0.1"
+PORT = 1234
+my_username = input("Username: ")
 
-def start_connections(host, port, num_conns):
-    server_addr = (host, port)
-    for i in range(0, num_conns):
-        connid = i + 1
-        print("starting connection", connid, "to", server_addr)
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.setblocking(False)
-        sock.connect_ex(server_addr)
-        events = selectors.EVENT_READ | selectors.EVENT_WRITE
-        data = types.SimpleNamespace(
-            connid=connid,
-            msg_total=sum(len(m) for m in messages),
-            recv_total=0,
-            messages=list(messages),
-            outb=b"",
-        )
-        sel.register(sock, events, data=data)
+# Create a socket
+# socket.AF_INET - address family, IPv4, some otehr possible are AF_INET6, AF_BLUETOOTH, AF_UNIX
+# socket.SOCK_STREAM - TCP, conection-based, socket.SOCK_DGRAM - UDP, connectionless, datagrams, socket.SOCK_RAW - raw IP packets
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+# Connect to a given ip and port
+client_socket.connect((IP, PORT))
 
-def service_connection(key, mask):
-    sock = key.fileobj
-    data = key.data
-    if mask & selectors.EVENT_READ:
-        recv_data = sock.recv(1024)  # Should be ready to read
-        if recv_data:
-            print("received", repr(recv_data), "from connection", data.connid)
-            data.recv_total += len(recv_data)
-        if not recv_data or data.recv_total == data.msg_total:
-            print("closing connection", data.connid)
-            sel.unregister(sock)
-            sock.close()
-    if mask & selectors.EVENT_WRITE:
-        if not data.outb and data.messages:
-            data.outb = data.messages.pop(0)
-        if data.outb:
-            print("sending", repr(data.outb), "to connection", data.connid)
-            sent = sock.send(data.outb)  # Should be ready to write
-            data.outb = data.outb[sent:]
+# Set connection to non-blocking state, so .recv() call won;t block, just return some exception we'll handle
+client_socket.setblocking(False)
 
+# Prepare username and header and send them
+# We need to encode username to bytes, then count number of bytes and prepare header of fixed size, that we encode to bytes as well
+username = my_username.encode('utf-8')
+username_header = f"{len(username):<{HEADER_LENGTH}}".encode('utf-8')
+client_socket.send(username_header + username)
 
-#if len(sys.argv) != 4:
-#    print("usage:", sys.argv[0], "<host> <port> <num_connections>")
-#    sys.exit(1)
+while True:
 
-#host, port, num_conns = sys.argv[1:4]
-host, port, num_conns = '127.0.0.1', 65432, 2
+    # Wait for user to input a message
+    message = input(f'{my_username} > ')
 
-start_connections(host, int(port), int(num_conns))
+    # If message is not empty - send it
+    if message:
 
-try:
-    while True:
-        events = sel.select(timeout=1)
-        if events:
-            for key, mask in events:
-                service_connection(key, mask)
-        # Check for a socket being monitored to continue.
-        if not sel.get_map():
-            break
-except KeyboardInterrupt:
-    print("caught keyboard interrupt, exiting")
-finally:
-    sel.close()
+        # Encode message to bytes, prepare header and convert to bytes, like for username above, then send
+        message = message.encode('utf-8')
+        message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+        client_socket.send(message_header + message)
+
+    try:
+        # Now we want to loop over received messages (there might be more than one) and print them
+        while True:
+
+            # Receive our "header" containing username length, it's size is defined and constant
+            username_header = client_socket.recv(HEADER_LENGTH)
+
+            # If we received no data, server gracefully closed a connection, for example using socket.close() or socket.shutdown(socket.SHUT_RDWR)
+            if not len(username_header):
+                print('Connection closed by the server')
+                sys.exit()
+
+            # Convert header to int value
+            username_length = int(username_header.decode('utf-8').strip())
+
+            # Receive and decode username
+            username = client_socket.recv(username_length).decode('utf-8')
+
+            # Now do the same for message (as we received username, we received whole message, there's no need to check if it has any length)
+            message_header = client_socket.recv(HEADER_LENGTH)
+            message_length = int(message_header.decode('utf-8').strip())
+            message = client_socket.recv(message_length).decode('utf-8')
+
+            # Print message
+            print(f'{username} > {message}')
+
+    except IOError as e:
+        # This is normal on non blocking connections - when there are no incoming data error is going to be raised
+        # Some operating systems will indicate that using AGAIN, and some using WOULDBLOCK error code
+        # We are going to check for both - if one of them - that's expected, means no incoming data, continue as normal
+        # If we got different error code - something happened
+        if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
+            print('Reading error: {}'.format(str(e)))
+            sys.exit()
+
+        # We just did not receive anything
+        continue
+
+    except Exception as e:
+        # Any other exception - something happened, exit
+        print('Reading error: '.format(str(e)))
+        sys.exit()

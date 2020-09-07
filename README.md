@@ -1,6 +1,6 @@
 # AdvanceNetworkingAssignments
 assignments for advanced networking class
-Much of the code for homework 1 was adapted 
-from https://github.com/realpython/materials/blob/master/python-sockets-tutorial/ 
-tutorial at https://realpython.com/python-sockets/
 
+code built upon from 
+https://pythonprogramming.net/server-chatroom-sockets-tutorial-python-3/
+https://pythonprogramming.net/client-chatroom-sockets-tutorial-python-3/?completed=/server-chatroom-sockets-tutorial-python-3/
