@@ -26,10 +26,7 @@ username_header = f"{len(username):<{HEADER_LENGTH}}".encode('utf-8')
 client_socket.send(username_header + username)
 
 while True:
-
-    # Wait for user to input a message
-    message = input(f'{my_username} > ')
-
+    message = False
     # If message is not empty - send it
     if message:
 
@@ -40,8 +37,9 @@ while True:
 
     try:
         # Now we want to loop over received messages (there might be more than one) and print them
+        i =0
         while True:
-
+            i+=1
             # Receive our "header" containing username length, it's size is defined and constant
             username_header = client_socket.recv(HEADER_LENGTH)
 
@@ -60,6 +58,11 @@ while True:
             message_header = client_socket.recv(HEADER_LENGTH)
             message_length = int(message_header.decode('utf-8').strip())
             message = client_socket.recv(message_length).decode('utf-8')
+            if i % 10 ==0:
+                nak = 'nak\n'+str(0)
+                nak = nak.encode('utf-8')
+                message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
+                client_socket.send(message_header + nak)
 
             # Print message
             print(f'{username} > {message}')
