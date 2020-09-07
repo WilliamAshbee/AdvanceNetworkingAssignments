@@ -87,6 +87,7 @@ while True:
 
             # If False - client disconnected before he sent his name
             if user is False:
+                print('user died')
                 continue
 
             # Add accepted socket to select.select() list
@@ -103,18 +104,8 @@ while True:
             # Receive message
             message = receive_message(notified_socket)
 
-            # If False, client disconnected, cleanup
-            if message is False:
-                print('Closed connection from: {}'.format(clients[notified_socket]['data'].decode('utf-8')))
-
-                # Remove from list for socket.socket()
-                sockets_list.remove(notified_socket)
-
-                # Remove from our list of users
-                del clients[notified_socket]
-
-                continue
-
+            if message == False:
+                print('user may have died')
             # Get user by notified socket, so we will know who sent the message
             user = clients[notified_socket]
 
@@ -130,11 +121,3 @@ while True:
                     # We are reusing here message header sent by sender, and saved username header send by user when he connected
                     client_socket.send(user['header'] + user['data'] + message['header'] + message['data'])
 
-    # It's not really necessary to have this, but will handle some socket exceptions just in case
-    for notified_socket in exception_sockets:
-
-        # Remove from list for socket.socket()
-        sockets_list.remove(notified_socket)
-
-        # Remove from our list of users
-        del clients[notified_socket]

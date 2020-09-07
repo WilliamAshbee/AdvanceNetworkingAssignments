@@ -60,12 +60,14 @@ while True:
             message = client_socket.recv(message_length).decode('utf-8')
             if i % 10 ==0:
                 nak = 'nak\n'+str(0)
+                print ('nak',nak)
                 nak = nak.encode('utf-8')
                 message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
                 client_socket.send(message_header + nak)
 
             # Print message
             print(f'{username} > {message}')
+            
 
     except IOError as e:
         # This is normal on non blocking connections - when there are no incoming data error is going to be raised
@@ -74,7 +76,6 @@ while True:
         # If we got different error code - something happened
         if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
             print('Reading error: {}'.format(str(e)))
-            sys.exit()
 
         # We just did not receive anything
         continue
@@ -82,4 +83,3 @@ while True:
     except Exception as e:
         # Any other exception - something happened, exit
         print('Reading error: '.format(str(e)))
-        sys.exit()

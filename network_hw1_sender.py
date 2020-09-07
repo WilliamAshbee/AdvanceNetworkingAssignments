@@ -49,11 +49,6 @@ for packet in packets:
                 # Receive our "header" containing username length, it's size is defined and constant
                 username_header = client_socket.recv(HEADER_LENGTH)
 
-                # If we received no data, server gracefully closed a connection, for example using socket.close() or socket.shutdown(socket.SHUT_RDWR)
-                if not len(username_header):
-                    print('Connection closed by the server')
-                    sys.exit()
-
                 # Convert header to int value
                 username_length = int(username_header.decode('utf-8').strip())
 
@@ -68,6 +63,7 @@ for packet in packets:
                 m = message.split()
                 if m[0] == 'nak':
                     try:
+                        print('returning lost packet')
                         ind = (int) (m[1])
                         client_socket.send(messages[m[ind]])
 
@@ -83,15 +79,13 @@ for packet in packets:
             # If we got different error code - something happened
             if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
                 print('Reading error: {}'.format(str(e)))
-                sys.exit()
-
+                
             # We just did not receive anything
             continue
 
         except Exception as e:
             # Any other exception - something happened, exit
             print('Reading error: '.format(str(e)))
-            sys.exit()
 
 while True:
     try:
@@ -100,11 +94,6 @@ while True:
 
             # Receive our "header" containing username length, it's size is defined and constant
             username_header = client_socket.recv(HEADER_LENGTH)
-
-            # If we received no data, server gracefully closed a connection, for example using socket.close() or socket.shutdown(socket.SHUT_RDWR)
-            if not len(username_header):
-                print('Connection closed by the server')
-                sys.exit()
 
             # Convert header to int value
             username_length = int(username_header.decode('utf-8').strip())
@@ -119,6 +108,7 @@ while True:
 
             # Print message
             print(f'{username} > {message}')
+            print('\n')
 
     except IOError as e:
         # This is normal on non blocking connections - when there are no incoming data error is going to be raised
