@@ -43,17 +43,14 @@ def receive_naks(messageDict):
         if username != 'receiver':
             print ('messages being received from unknown user', username)
             sys.exit()
-        else:
-            print('message received from receiver')
         # Now do the same for message (as we received username, we received whole message, there's no need to check if it has any length)
         message_header = client_socket.recv(HEADER_LENGTH)
         message_length = int(message_header.decode('utf-8').strip())
         message = client_socket.recv(message_length).decode('utf-8')
-        print("receieved nak", message)
         m = message.split()
-        print('length m', len(m))
         assert len(m) == 3
-        uid = m[2].decode('utf-8')
+        uid = m[2]
+        print (m)
         if 'nak' in m:
             ind = (int) (m[1])
             assert isinstance(ind,int)
@@ -93,7 +90,6 @@ for packet in packets:
         try:
             # Now we want to loop over received messages (there might be more than one) and print them
             assert isinstance(message,bytes)
-            print(message)
             client_socket.send(message)
             receive_naks(messageDict)
             
