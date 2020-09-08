@@ -91,12 +91,14 @@ while True:
 
             # Receive message
             message = receive_message(notified_socket)
-            print(type(message['data']),message)
-            assert isinstance(message['data'], bytes)
-
+            
             if message == False:
                 print('user may have died')
                 sys.exit('user mah have died')
+
+            print(type(message['data']),message)
+            assert isinstance(message['data'], bytes)
+
             # Get user by notified socket, so we will know who sent the message
             user = clients[notified_socket]
 
@@ -107,7 +109,8 @@ while True:
 
                 # But don't sent it to sender
                 if client_socket != notified_socket:
-
+                    if 'nak' in message['data'].decode('utf-8'):
+                        print ('nak',user['header'].decode('utf-8'))
                     # Send user and message (both with their headers)
                     # We are reusing here message header sent by sender, and saved username header send by user when he connected
                     client_socket.send(user['header'] + user['data'] + message['header'] + message['data'])

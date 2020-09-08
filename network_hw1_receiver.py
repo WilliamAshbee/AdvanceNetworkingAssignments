@@ -53,15 +53,19 @@ while True:
 
             # Receive and decode username
             username = client_socket.recv(username_length).decode('utf-8')
-
+            if username != 'sender':
+                print('shouldnt be receiving receiver packets')
+                sys.exit()
+            else:
+                print('receiving messages from sender')
             # Now do the same for message (as we received username, we received whole message, there's no need to check if it has any length)
             message_header = client_socket.recv(HEADER_LENGTH)
             message_length = int(message_header.decode('utf-8').strip())
             message = client_socket.recv(message_length).decode('utf-8')
             messageList = message.split()
+            assert len(messageList) == 3
             if i % 10 ==0:
-                nak = 'nak\n'+str(messageList[1])
-                print ('nak',nak)
+                nak = 'nak\n'+str(messageList[1])+'\n'+str(messageList[2])
                 nak = nak.encode('utf-8')
                 message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
                 client_socket.send(message_header + nak)
