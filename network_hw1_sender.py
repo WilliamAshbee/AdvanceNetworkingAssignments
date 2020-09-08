@@ -49,7 +49,7 @@ def receive_naks(messageDict):
         message_header = client_socket.recv(HEADER_LENGTH)
         message_length = int(message_header.decode('utf-8').strip())
         message = client_socket.recv(message_length).decode('utf-8')
-
+        print("receieved nak", message)
         m = message.split()
         print('length m', len(m))
         assert len(m) == 3
@@ -93,6 +93,7 @@ for packet in packets:
         try:
             # Now we want to loop over received messages (there might be more than one) and print them
             assert isinstance(message,bytes)
+            print(message)
             client_socket.send(message)
             receive_naks(messageDict)
             

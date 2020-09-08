@@ -26,6 +26,10 @@ username = my_username.encode('utf-8')
 username_header = f"{len(username):<{HEADER_LENGTH}}".encode('utf-8')
 client_socket.send(username_header + username)
 i =0
+
+receivedDecodedMessages = {}
+missingMessages = {}
+messageKeys = []
         
 while True:
     message = False
@@ -56,23 +60,53 @@ while True:
             if username != 'sender':
                 print('shouldnt be receiving receiver packets')
                 sys.exit()
-            else:
-                print('receiving messages from sender')
             # Now do the same for message (as we received username, we received whole message, there's no need to check if it has any length)
+            
             message_header = client_socket.recv(HEADER_LENGTH)
             message_length = int(message_header.decode('utf-8').strip())
             message = client_socket.recv(message_length).decode('utf-8')
             messageList = message.split()
             assert len(messageList) == 3
-            if i % 10 ==0:
+            uid = messageList[2]
+            pnum = int(messageList[1])
+            if i % 10 ==0:#this will go away completely or be replaced with a check
                 nak = 'nak\n'+str(messageList[1])+'\n'+str(messageList[2])
                 nak = nak.encode('utf-8')
                 message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
                 client_socket.send(message_header + nak)
+                if uid not in missingMessages:
+                    missingMessages[uid] = []
+                    missingMessages[uid].append(pnum)
+                else:
+                    missingMessages[uid].append(pnum)
+            else:
+                #store in received messages
+                if uid in receivedDecodedMessages:
+                    haveSaved = False
+                    for el in receivedDecodedMessages[uid]:
+                        m = el.split()
+                        if int(m[1]) == pnum:
+                             haveSaved = True
+                             break
+                    if not haveSaved:
+                        receivedDecodedMessages[uid].append( message)
+                    else:
+                        print ('duplicate packet received',message)
+                else:
+                    receivedDecodedMessages[uid] = []
+                    receivedDecodedMessages[uid].append(message)
+                    
+                if uid not in messageKeys:
+                    messageKeys.append(uid)
+                if uid in missingMessages:
+                    print('uid in missing messages')
+                    while pnum in missingMessages[uid]:
+                        missingMessages[uid].remove(pnum)
+                        print('removing missing message', uid, pnum)
 
             # Print message
-            print(f'{username} > {message}')
-            
+            #print(f'{username} > {message}')
+            print(missingMessages)
 
     except IOError as e:
         # This is normal on non blocking connections - when there are no incoming data error is going to be raised
