@@ -75,7 +75,7 @@ for packet in packets:
     #uid = uid.encode('utf-8')
     messageDict[uid] = []
     for packet_number in range(packet):
-        time.sleep(.01)
+        #time.sleep(.01)
 
         # Wait for user to input a message
         message = str(packet)+'\n'+str(packet_number)+'\n'+uid
@@ -101,7 +101,9 @@ for packet in packets:
             # If we got different error code - something happened
             if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
                 print('Reading error: {}'.format(str(e)))
-                
+            
+            time.sleep(.01)
+        
             # We just did not receive anything
             continue
 
@@ -109,15 +111,17 @@ for packet in packets:
             # Any other exception - something happened, exit
             print('Reading error: '.format(str(e)))
 
+print('entering extra while loop\n\n\n')
 while True:
     try:
         # Now we want to loop over received messages (there might be more than one) and print them
-        receive_naks()
+        receive_naks(messageDict)
                 
     except IOError as e:
         if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
             print('Reading error: {}'.format(str(e)))
         # We just did not receive anything
+        time.sleep(.01)
         continue
 
     except Exception as e:

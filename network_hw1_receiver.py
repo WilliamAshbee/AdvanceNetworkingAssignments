@@ -2,7 +2,7 @@ import socket
 import select
 import errno
 import sys
-
+import time
 HEADER_LENGTH = 10
 
 IP = "127.0.0.1"
@@ -115,7 +115,7 @@ while True:
         # If we got different error code - something happened
         if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
             print('Reading error: {}'.format(str(e)))
-
+        time.sleep(.01)
         # We just did not receive anything
         continue
 

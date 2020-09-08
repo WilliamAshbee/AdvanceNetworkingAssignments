@@ -1,7 +1,7 @@
 import socket
 import select
 import sys
-
+import time
 HEADER_LENGTH = 10
 
 IP = "127.0.0.1"
@@ -93,8 +93,10 @@ while True:
             message = receive_message(notified_socket)
             
             if message == False:
-                print('user may have died')
-                sys.exit('user mah have died')
+                time.sleep(.01)#slow down
+                continue
+                #print('user may have died')
+                #sys.exit('user mah have died')
 
             print(type(message['data']),message)
             assert isinstance(message['data'], bytes)
