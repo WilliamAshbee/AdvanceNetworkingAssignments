@@ -28,7 +28,7 @@ client_socket.send(username_header + username)
 
 packets = [ 150, 250, 450, 650, 850, 1000]
 
-def receive_naks():
+def receive_naks(messages):
     while True:
         # Receive our "header" containing username length, it's size is defined and constant
         username_header = client_socket.recv(HEADER_LENGTH)
@@ -47,21 +47,23 @@ def receive_naks():
         m = message.split()
         print('length m', len(m))
         assert len(m) == 2
-        if m[0] == 'nak':
+        if 'nak' in m:
             try:
                 ind = (int) (m[1])
-                print (type(ind))
-                message = messages[m[ind]]
-                message = message.encode('utf-8')
-                message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
-                client_socket.send(message_header + message)
+                assert isinstance(ind,int)
+                message = messages[ind] #should be message header + message
+                assert isinstance(message,bytes)
+                print ('receivnaksresponse',message)
+                client_socket.send(message)
                 print('returning lost packet')
 
             except Exception as e: 
                 print(e)
                 print("exception triggered by following token", m[1])
-        # Print message
-        print(f'{username} > {message}')
+        else:
+            # Print message
+            print(f'{username} > {message}')
+
 
 for packet in packets:
     messages = []
@@ -78,10 +80,11 @@ for packet in packets:
         message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
         try:
             # Now we want to loop over received messages (there might be more than one) and print them
-
-            client_socket.send(message_header + message)
-
-            receive_naks()
+            message = message_header + message
+            assert isinstance(message,bytes) # TODO: remember to save the message number eventually
+            messages.append(message)
+            client_socket.send(message)
+            receive_naks(messages)
             
 
         except IOError as e:

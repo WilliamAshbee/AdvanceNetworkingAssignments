@@ -91,6 +91,8 @@ while True:
 
             # Receive message
             message = receive_message(notified_socket)
+            print(type(message['data']),message)
+            assert isinstance(message['data'], bytes)
 
             if message == False:
                 print('user may have died')
