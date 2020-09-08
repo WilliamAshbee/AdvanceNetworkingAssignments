@@ -1,5 +1,6 @@
 import socket
 import select
+import sys
 
 HEADER_LENGTH = 10
 
@@ -51,23 +52,10 @@ def receive_message(client_socket):
 
     except:
 
-        # If we are here, client closed connection violently, for example by pressing ctrl+c on his script
-        # or just lost his connection
-        # socket.close() also invokes socket.shutdown(socket.SHUT_RDWR) what sends information about closing the socket (shutdown read/write)
-        # and that's also a cause when we receive an empty message
         return False
 
 while True:
 
-    # Calls Unix select() system call or Windows select() WinSock call with three parameters:
-    #   - rlist - sockets to be monitored for incoming data
-    #   - wlist - sockets for data to be send to (checks if for example buffers are not full and socket is ready to send some data)
-    #   - xlist - sockets to be monitored for exceptions (we want to monitor all sockets for errors, so we can use rlist)
-    # Returns lists:
-    #   - reading - sockets we received some data on (that way we don't have to check sockets manually)
-    #   - writing - sockets ready for data to be send thru them
-    #   - errors  - sockets with some exceptions
-    # This is a blocking call, code execution will "wait" here and "get" notified in case any action should be taken
     read_sockets, _, exception_sockets = select.select(sockets_list, [], sockets_list)
 
 
@@ -88,7 +76,7 @@ while True:
             # If False - client disconnected before he sent his name
             if user is False:
                 print('user died')
-                continue
+                sys.exit('user died')
 
             # Add accepted socket to select.select() list
             sockets_list.append(client_socket)
@@ -106,6 +94,7 @@ while True:
 
             if message == False:
                 print('user may have died')
+                sys.exit('user mah have died')
             # Get user by notified socket, so we will know who sent the message
             user = clients[notified_socket]
 

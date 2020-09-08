@@ -1,6 +1,7 @@
 import socket
 import select
 import errno
+import sys
 
 HEADER_LENGTH = 10
 
@@ -24,7 +25,8 @@ client_socket.setblocking(False)
 username = my_username.encode('utf-8')
 username_header = f"{len(username):<{HEADER_LENGTH}}".encode('utf-8')
 client_socket.send(username_header + username)
-
+i =0
+        
 while True:
     message = False
     # If message is not empty - send it
@@ -32,12 +34,10 @@ while True:
 
         # Encode message to bytes, prepare header and convert to bytes, like for username above, then send
         message = message.encode('utf-8')
-        message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
         client_socket.send(message_header + message)
 
     try:
         # Now we want to loop over received messages (there might be more than one) and print them
-        i =0
         while True:
             i+=1
             # Receive our "header" containing username length, it's size is defined and constant
@@ -58,8 +58,9 @@ while True:
             message_header = client_socket.recv(HEADER_LENGTH)
             message_length = int(message_header.decode('utf-8').strip())
             message = client_socket.recv(message_length).decode('utf-8')
+            messageList = message.split()
             if i % 10 ==0:
-                nak = 'nak\n'+str(0)
+                nak = 'nak\n'+str(messageList[1])
                 print ('nak',nak)
                 nak = nak.encode('utf-8')
                 message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
@@ -82,4 +83,5 @@ while True:
 
     except Exception as e:
         # Any other exception - something happened, exit
+        
         print('Reading error: '.format(str(e)))
