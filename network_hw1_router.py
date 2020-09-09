@@ -9,6 +9,11 @@ HEADER_LENGTH = 10
 IP = "127.0.0.1"
 PORT = 1234
 
+###I learned how to do python sockets and used the following code links
+#https://pythonprogramming.net/server-chatroom-sockets-tutorial-python-3/ 
+#https://pythonprogramming.net/client-chatroom-sockets-tutorial-python-3/?completed=/server-chatroom-sockets-tutorial-python-3/
+
+
 # Create a socket
 # socket.AF_INET - address family, IPv4, some otehr possible are AF_INET6, AF_BLUETOOTH, AF_UNIX
 # socket.SOCK_STREAM - TCP, conection-based, socket.SOCK_DGRAM - UDP, connectionless, datagrams, socket.SOCK_RAW - raw IP packets
