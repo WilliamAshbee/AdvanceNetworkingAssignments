@@ -2,6 +2,7 @@ import socket
 import select
 import sys
 import time
+from random import *
 HEADER_LENGTH = 10
 
 IP = "127.0.0.1"
@@ -29,7 +30,7 @@ sockets_list = [server_socket]
 
 # List of connected clients - socket as a key, user header and name as data
 clients = {}
-i = 0
+
 print(f'Listening for connections on {IP}:{PORT}...')
 
 # Handles message receiving
@@ -105,9 +106,8 @@ while True:
             print(f'Received message from {user["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
 
             un = user["data"].decode("utf-8")
-            if un == 'sender':
-                i+=1
-            if i%10 == 0 and un=='sender':
+            x = 7
+            if random() < .1*x: # drop packets 
                 break
             # Iterate over connected clients and broadcast message
             for client_socket in clients:

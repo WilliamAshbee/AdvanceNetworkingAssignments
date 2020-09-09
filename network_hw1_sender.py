@@ -120,7 +120,7 @@ for packet in packets:
             if(not isinstance(message,bytes)):
                 print (isinstance(message,bytes))
             client_socket.send(message)
-            time.sleep(.01)
+            #time.sleep(.01)
             receive_naks(messageDict)
                         
 
@@ -135,12 +135,12 @@ for packet in packets:
         
             # We just did not receive anything
             continue
-            time.sleep(.1)
+            time.sleep(.0001)
             
         except Exception as e:
             # Any other exception - something happened, exit
             print('Reading error: '.format(str(e)))
-            time.sleep(.1)
+            time.sleep(.0001)
 
 
 print('entering extra while loop\n\n\n')
@@ -153,6 +153,7 @@ while True:
         if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
             print('Reading error: {}'.format(str(e)))
         # We just did not receive anything
+        time.sleep(.0001)
         continue
 
     except Exception as e:
