@@ -161,6 +161,9 @@ while True:
         else:
             time.sleep(.001)
             sendRequiredNaks()
+            if len(receivedDecodedMessages) > 1:
+                for key in receivedDecodedMessages:
+                    print(key, " has received ", len(receivedDecodedMessages[key]), "messages")
         if contCount > 100000:
             receivedMessage = False
             contCount = 0

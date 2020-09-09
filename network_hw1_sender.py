@@ -120,7 +120,7 @@ for packet in packets:
             if(not isinstance(message,bytes)):
                 print (isinstance(message,bytes))
             client_socket.send(message)
-            time.sleep(.1)
+            time.sleep(.01)
             receive_naks(messageDict)
                         
 
