@@ -28,6 +28,7 @@ username_header = f"{len(username):<{HEADER_LENGTH}}".encode('utf-8')
 client_socket.send(username_header + username)
 
 packets = [ 150, 250, 450, 650, 850, 1000]
+#packets = [150]
 global respnak
 respnak = 0
 

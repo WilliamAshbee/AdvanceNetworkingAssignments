@@ -66,6 +66,11 @@ def sendRequiredNaks():
         
                 
 lastuuid = ""
+global receivedMessage
+receivedMessage = False
+global contCount 
+contCount = 0
+
 while True:
     try:
         # Now we want to loop over received messages (there might be more than one) and print them
@@ -128,6 +133,7 @@ while True:
                 receivedDecodedMessages[uid].append(message)
 
             if uid not in messageKeys:
+                receivedMessage = True
                 if lastuuid != "":
                     createMissingSet(lastuuid)
                 lastuuid = uid
@@ -136,6 +142,8 @@ while True:
 
             sendRequiredNaks()
 
+            if receivedMessage:
+                contCount = 0
             # Print message
             #print(f'{username} > {message}')
             #print(missingMessages)
@@ -148,7 +156,19 @@ while True:
         if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
             print('Reading error: {}'.format(str(e)))
         # We just did not receive anything
+        if receivedMessage:
+            contCount+=1
+        else:
+            time.sleep(.001)
+            sendRequiredNaks()
+        if contCount > 100000:
+            receivedMessage = False
+            contCount = 0
+            createMissingSet(lastuuid)
+        #print('continuing',contCount)
+        
         continue
+        
 
     except Exception as e:
         # Any other exception - something happened, exit
