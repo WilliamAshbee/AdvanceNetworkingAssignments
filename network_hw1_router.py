@@ -34,6 +34,12 @@ clients = {}
 print(f'Listening for connections on {IP}:{PORT}...')
 
 # Handles message receiving
+messageCounter = {}
+packets = [ 150, 250, 450, 650, 850, 1000]
+
+for packet in packets:
+    messageCounter[packet] = 0
+
 def receive_message(client_socket):
 
     try:
@@ -52,12 +58,14 @@ def receive_message(client_socket):
         return {'header': message_header, 'data': client_socket.recv(message_length)}
 
     except:
-
         return False
-
+global receivedpacket
+receivedpacket = False
+global waitCounter
+waitCounter = 0
 while True:
     read_sockets, _, exception_sockets = select.select(sockets_list, [], sockets_list)
-
+    
 
     # Iterate over notified sockets
     for notified_socket in read_sockets:
@@ -92,19 +100,30 @@ while True:
             # Receive message
             message = receive_message(notified_socket)
             
+            if waitCounter > 50000 and receivedpacket:
+                for key in messageCounter:
+                    print(key, ' required ', messageCounter[key],' attempts')
             if message == False:
+                waitCounter+=1
                 continue
                 #print('user may have died')
                 #sys.exit('user mah have died')
-
+            waitCounter = 0
+            
             print(type(message['data']),message)
             assert isinstance(message['data'], bytes)
 
             # Get user by notified socket, so we will know who sent the message
             user = clients[notified_socket]
 
+            
             print(f'Received message from {user["data"].decode("utf-8")}: {message["data"].decode("utf-8")}')
 
+            for key in messageCounter:
+                if str(key) in message['data'].decode('utf-8') and 'nak' not in message['data'].decode('utf-8'):
+                    messageCounter[key]+=1
+            
+            receivedpacket = True
             un = user["data"].decode("utf-8")
             x = 7
             if random() < .1*x: # drop packets 
