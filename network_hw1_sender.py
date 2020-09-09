@@ -28,8 +28,11 @@ username_header = f"{len(username):<{HEADER_LENGTH}}".encode('utf-8')
 client_socket.send(username_header + username)
 
 packets = [ 150, 250, 450, 650, 850, 1000]
+global respnak
+respnak = 0
 
 def receive_naks(messageDict):
+    global respnak
     while True:
         print('1')
         # Receive our "header" containing username length, it's size is defined and constant
@@ -71,14 +74,20 @@ def receive_naks(messageDict):
                 if rind == ind:
                     rm = message
                     break
-            #assert rm != None
+            if rm == None:
+                print ('rm is none')
+            assert rm != None
             if 'nak' in message.decode('utf-8'):
                 print('sending a nak, error')
                 sys.exit()
             print ('receivnaksresponse',rm)
             client_socket.send(rm)
-            time.sleep(5)
-            sys.exit('testing')
+            print ('after send')
+            print("responsenaks",respnak)
+            respnak+=1
+            #if respnak >= 100:
+            #    time.sleep(5)
+            #    sys.exit('testing')
             print('returning lost packet')
         else:
             # Print message

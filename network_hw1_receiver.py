@@ -31,6 +31,8 @@ receivedDecodedMessages = {}
 messageKeys = []
 missingMessages = {}
 duplicateMessages = 0
+
+
 def createMissingSet(key):
     print('create missing set')
     firstM = receivedDecodedMessages[key][0]
@@ -93,6 +95,16 @@ while True:
             assert len(messageList) == 3
             uid = messageList[2]
             pnum = int(messageList[1])
+            if uid in missingMessages:
+                while (pnum in missingMessages[uid]):
+                    missingMessages[uid].remove(pnum)
+                    print('removing', uid, pnum)
+                if pnum in missingMessages[uid]:
+                    print('error is here')
+                assert pnum not in missingMessages[uid]
+                
+            
+
             #store in received messages
             print(uid,pnum)
             if uid in receivedDecodedMessages:
@@ -115,14 +127,6 @@ while True:
                 receivedDecodedMessages[uid] = []
                 receivedDecodedMessages[uid].append(message)
 
-            if uid in missingMessages:
-                while (pnum in missingMessages[uid]):
-                    missingMessages[uid].remove(pnum)
-                    print('removing', uid, pnum)
-                if pnum in missingMessages[uid]:
-                    print('error is here')
-                assert pnum not in missingMessages[uid]
-                
             if uid not in messageKeys:
                 if lastuuid != "":
                     createMissingSet(lastuuid)
