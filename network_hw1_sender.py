@@ -30,24 +30,32 @@ client_socket.send(username_header + username)
 packets = [ 150, 250, 450, 650, 850, 1000]
 
 def receive_naks(messageDict):
-    for i in range(10):
+    while True:
+        print('1')
         # Receive our "header" containing username length, it's size is defined and constant
         username_header = client_socket.recv(HEADER_LENGTH)
-
+        print('2')
+        
         # Convert header to int value
         username_length = int(username_header.decode('utf-8').strip())
-
+        print('3')
+        
         # Receive and decode username
         username = client_socket.recv(username_length).decode('utf-8')
-
+        print('4')
+        
         if username != 'receiver':
-            print ('messages being received from unknown user', username)
+            print('messages being received from unknown user', username)
             sys.exit()
+        print('5')
+        
         # Now do the same for message (as we received username, we received whole message, there's no need to check if it has any length)
         message_header = client_socket.recv(HEADER_LENGTH)
         message_length = int(message_header.decode('utf-8').strip())
         message = client_socket.recv(message_length).decode('utf-8')
         m = message.split()
+        print('6')
+        
         assert len(m) == 3
         uid = m[2]
         print (m)
@@ -63,12 +71,14 @@ def receive_naks(messageDict):
                 if rind == ind:
                     rm = message
                     break
-            
+            #assert rm != None
             if 'nak' in message.decode('utf-8'):
                 print('sending a nak, error')
                 sys.exit()
             print ('receivnaksresponse',rm)
             client_socket.send(rm)
+            time.sleep(5)
+            sys.exit('testing')
             print('returning lost packet')
         else:
             # Print message
@@ -97,10 +107,12 @@ for packet in packets:
 
         try:
             # Now we want to loop over received messages (there might be more than one) and print them
-            assert isinstance(message,bytes)
+            if(not isinstance(message,bytes)):
+                print (isinstance(message,bytes))
             client_socket.send(message)
+            time.sleep(.1)
             receive_naks(messageDict)
-            
+                        
 
         except IOError as e:
             # This is normal on non blocking connections - when there are no incoming data error is going to be raised
@@ -110,14 +122,16 @@ for packet in packets:
             if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
                 print('Reading error: {}'.format(str(e)))
             
-            time.sleep(.01)
         
             # We just did not receive anything
             continue
-
+            time.sleep(.1)
+            
         except Exception as e:
             # Any other exception - something happened, exit
             print('Reading error: '.format(str(e)))
+            time.sleep(.1)
+
 
 print('entering extra while loop\n\n\n')
 while True:
@@ -129,7 +143,6 @@ while True:
         if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
             print('Reading error: {}'.format(str(e)))
         # We just did not receive anything
-        time.sleep(.01)
         continue
 
     except Exception as e:

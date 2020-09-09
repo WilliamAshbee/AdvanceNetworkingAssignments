@@ -3,6 +3,7 @@ import select
 import errno
 import sys
 import time
+import random
 HEADER_LENGTH = 10
 
 IP = "127.0.0.1"
@@ -31,41 +32,39 @@ messageKeys = []
 missingMessages = {}
 duplicateMessages = 0
 def createMissingSet(key):
+    print('create missing set')
     firstM = receivedDecodedMessages[key][0]
     msglength = (int)(firstM.split()[0])
     receivedSet= set()
-    max = -1
+    #max = -1
     if msglength > len(receivedDecodedMessages[key]):
         for rdm in receivedDecodedMessages[key]:
             temp = (int)(rdm.split()[1])
-            if temp > max:
-                max = temp
+            #if temp > max:
+            #    max = temp
             receivedSet.add(temp)
-        maxSet = [x for x in range (1,max+1,1)]
+        maxSet = [x for x in range (1,msglength+1,1)]
         maxSet = (set) (maxSet)
         missingset = maxSet-receivedSet
         missingMessages[key] = missingset
+        print('missing set', missingMessages[key])
         
 def sendRequiredNaks():
     for key in missingMessages:
-        print("missing", key, missingMessages[key])
-        for missingpacket in missingMessages[key]:
+        if len(missingMessages[key]) > 0:
+            print ('send naks')
+            missingpacket = random.choice((list)(missingMessages[key]))
+            print("missingpacket",missingpacket)
             nak = 'nak\n'+str(missingpacket)+'\n'+str(key) #nak\npacketnum\nuuid
             nak = nak.encode('utf-8')
             message_header = f"{len(nak):<{HEADER_LENGTH}}".encode('utf-8')#lenmessage
+            print(nak)
             client_socket.send(message_header + nak)
-            
+            print(message_header+nak)
+        
                 
 lastuuid = ""
 while True:
-    message = False
-    # If message is not empty - send it
-    if message:
-
-        # Encode message to bytes, prepare header and convert to bytes, like for username above, then send
-        message = message.encode('utf-8')
-        client_socket.send(message_header + message)
-
     try:
         # Now we want to loop over received messages (there might be more than one) and print them
         while True:
@@ -95,6 +94,7 @@ while True:
             uid = messageList[2]
             pnum = int(messageList[1])
             #store in received messages
+            print(uid,pnum)
             if uid in receivedDecodedMessages:
                 haveSaved = False
                 for el in receivedDecodedMessages[uid]:
@@ -104,20 +104,25 @@ while True:
                             haveSaved = True
                             break
                 if not haveSaved:
+                    print('saving')
                     receivedDecodedMessages[uid].append(message)
                 else:
                     duplicateMessages+=1
                     print('duplicate packet received',message)
                     print('total duplicates',duplicateMessages)
             else:
+                print('first uid')
                 receivedDecodedMessages[uid] = []
                 receivedDecodedMessages[uid].append(message)
 
             if uid in missingMessages:
                 while (pnum in missingMessages[uid]):
                     missingMessages[uid].remove(pnum)
+                    print('removing', uid, pnum)
+                if pnum in missingMessages[uid]:
+                    print('error is here')
+                assert pnum not in missingMessages[uid]
                 
-
             if uid not in messageKeys:
                 if lastuuid != "":
                     createMissingSet(lastuuid)
@@ -126,7 +131,6 @@ while True:
                 messageKeys.append(uid)
 
             sendRequiredNaks()
-            time.sleep(.01)
 
             # Print message
             #print(f'{username} > {message}')
@@ -139,7 +143,6 @@ while True:
         # If we got different error code - something happened
         if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
             print('Reading error: {}'.format(str(e)))
-        time.sleep(.01)
         # We just did not receive anything
         continue
 

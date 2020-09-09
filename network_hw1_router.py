@@ -92,7 +92,6 @@ while True:
             message = receive_message(notified_socket)
             
             if message == False:
-                time.sleep(.01)#slow down
                 continue
                 #print('user may have died')
                 #sys.exit('user mah have died')
@@ -109,8 +108,7 @@ while True:
             if un == 'sender':
                 i+=1
             if i%10 == 0 and un=='sender':
-                time.sleep(.01)
-                continue
+                break
             # Iterate over connected clients and broadcast message
             for client_socket in clients:
 
