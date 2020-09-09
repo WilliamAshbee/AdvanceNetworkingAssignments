@@ -3,6 +3,7 @@ import select
 import sys
 import time
 from random import *
+import matplotlib.pyplot as plt
 HEADER_LENGTH = 10
 
 IP = "127.0.0.1"
@@ -63,6 +64,12 @@ global receivedpacket
 receivedpacket = False
 global waitCounter
 waitCounter = 0
+global timestart
+global timeend
+timestart = None
+timeend = None
+global throughput
+throughput = 0
 while True:
     read_sockets, _, exception_sockets = select.select(sockets_list, [], sockets_list)
     
@@ -96,13 +103,29 @@ while True:
 
         # Else existing socket is sending a message
         else:
-
+            
             # Receive message
             message = receive_message(notified_socket)
             
-            if waitCounter > 50000 and receivedpacket:
+            if waitCounter > 5000 and receivedpacket:
+                x = []
+                y = []
                 for key in messageCounter:
+                    x.append(key)
+                    y.append(messageCounter[key])
                     print(key, ' required ', messageCounter[key],' attempts')
+          
+                colors = (0,0,0)
+                # Plot
+                plt.scatter(x, y, s=30, c='red', alpha=0.5)
+                plt.title('Networking homework 1 part b')
+                plt.suptitle('Throughput was ' + str(int(throughput))+ 'bytes/sec')
+                plt.xlabel('number of packets')
+                plt.ylabel('packets sent')
+                plt.savefig('sentpackets.png')
+                plt.close()
+                sys.exit('all packets sent')
+
             if message == False:
                 waitCounter+=1
                 continue
@@ -122,7 +145,15 @@ while True:
             for key in messageCounter:
                 if str(key) in message['data'].decode('utf-8') and 'nak' not in message['data'].decode('utf-8'):
                     messageCounter[key]+=1
-            
+            now = time.time()
+            if timestart == None:
+                if '1000' in message['data'].decode('utf-8') :
+                    timestart = time.time()
+            elif timeend == None and now-timestart > 2:
+                brec = messageCounter[1000]*int(message['header'].decode('utf-8').strip())
+                throughput = brec/(now-timestart)
+                timeend= now
+                
             receivedpacket = True
             un = user["data"].decode("utf-8")
             x = 7

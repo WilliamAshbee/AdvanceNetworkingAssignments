@@ -31,6 +31,9 @@ receivedDecodedMessages = {}
 messageKeys = []
 missingMessages = {}
 duplicateMessages = 0
+global packets
+packets = {}
+
 
 
 def createMissingSet(key):
@@ -98,7 +101,10 @@ while True:
             message = client_socket.recv(message_length).decode('utf-8')
             messageList = message.split()
             assert len(messageList) == 3
+            length = int(messageList[0])
             uid = messageList[2]
+            packets[uid] = length
+            
             pnum = int(messageList[1])
             if uid in missingMessages:
                 while (pnum in missingMessages[uid]):
@@ -161,14 +167,24 @@ while True:
         else:
             time.sleep(.001)
             sendRequiredNaks()
-            if len(receivedDecodedMessages) > 1:
-                for key in receivedDecodedMessages:
-                    print(key, " has received ", len(receivedDecodedMessages[key]), "messages")
         if contCount > 100000:
             receivedMessage = False
             contCount = 0
             createMissingSet(lastuuid)
         #print('continuing',contCount)
+        
+        
+        printFinalResults = len(receivedDecodedMessages) == 6
+        for key in receivedDecodedMessages:
+            if len(receivedDecodedMessages[key]) != int(packets[key]):
+                printFinalResults = False
+                break
+        if printFinalResults:
+            print('all packets received')
+            for key in receivedDecodedMessages:
+                print("message uid ", key,  ' received all of its', packets[key], ' packets')
+            time.sleep(2)
+            sys.exit('exiting successfully')
         
         continue
         
