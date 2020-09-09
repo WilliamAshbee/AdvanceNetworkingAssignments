@@ -32,6 +32,10 @@ packets = [ 150, 250, 450, 650, 850, 1000]
 global respnak
 respnak = 0
 
+global conts
+conts = 0
+lastReceivedNak = None
+
 def receive_naks(messageDict):
     global respnak
     while True:
@@ -58,6 +62,7 @@ def receive_naks(messageDict):
         message_length = int(message_header.decode('utf-8').strip())
         message = client_socket.recv(message_length).decode('utf-8')
         m = message.split()
+        lastReceivedNak = time.time()
         print('6')
         
         assert len(m) == 3
@@ -86,6 +91,7 @@ def receive_naks(messageDict):
             print ('after send')
             print("responsenaks",respnak)
             respnak+=1
+            conts = 0
             #if respnak >= 100:
             #    time.sleep(5)
             #    sys.exit('testing')
@@ -96,6 +102,8 @@ def receive_naks(messageDict):
 
 messageDict = {}
 lastUid = ""
+startime = time.time()
+
 for packet in packets:
     uid = uuid.uuid1()
     uid = str(uid)
@@ -143,19 +151,30 @@ for packet in packets:
             time.sleep(.0001)
 
 
+endtime = time.time()
+
 print('entering extra while loop\n\n\n')
 while True:
     try:
         # Now we want to loop over received messages (there might be more than one) and print them
+        if conts > 50000:
+            totalPackets = 0
+            for x in packets:
+                totalPackets+=x
+            print('maximum throughput (ignoring dropped packets) was ', totalPackets*45.0/(endtime-startime),' bytes per second')
+            sys.exit('successfully finished sending all packets over noisy router (.7 probability of failure)')
         receive_naks(messageDict)
+        
                 
     except IOError as e:
         if e.errno != errno.EAGAIN and e.errno != errno.EWOULDBLOCK:
             print('Reading error: {}'.format(str(e)))
         # We just did not receive anything
         time.sleep(.0001)
+        conts+=1
         continue
 
     except Exception as e:
         # Any other exception - something happened, exit
-        print('Reading error: '.format(str(e)))
+        conts+=1
+        continue
