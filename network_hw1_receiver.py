@@ -25,12 +25,38 @@ client_socket.setblocking(False)
 username = my_username.encode('utf-8')
 username_header = f"{len(username):<{HEADER_LENGTH}}".encode('utf-8')
 client_socket.send(username_header + username)
-i =0
 
 receivedDecodedMessages = {}
-missingMessages = {}
 messageKeys = []
+missingMessages = {}
+duplicateMessages = 0
+def createMissingSet(key):
+    firstM = receivedDecodedMessages[key][0]
+    msglength = (int)(firstM.split()[0])
+    receivedSet= set()
+    max = -1
+    if msglength > len(receivedDecodedMessages[key]):
+        for rdm in receivedDecodedMessages[key]:
+            temp = (int)(rdm.split()[1])
+            if temp > max:
+                max = temp
+            receivedSet.add(temp)
+        maxSet = [x for x in range (1,max+1,1)]
+        maxSet = (set) (maxSet)
+        missingset = maxSet-receivedSet
+        missingMessages[key] = missingset
         
+def sendRequiredNaks():
+    for key in missingMessages:
+        print("missing", key, missingMessages[key])
+        for missingpacket in missingMessages[key]:
+            nak = 'nak\n'+str(missingpacket)+'\n'+str(key) #nak\npacketnum\nuuid
+            nak = nak.encode('utf-8')
+            message_header = f"{len(nak):<{HEADER_LENGTH}}".encode('utf-8')#lenmessage
+            client_socket.send(message_header + nak)
+            
+                
+lastuuid = ""
 while True:
     message = False
     # If message is not empty - send it
@@ -43,7 +69,6 @@ while True:
     try:
         # Now we want to loop over received messages (there might be more than one) and print them
         while True:
-            i+=1
             # Receive our "header" containing username length, it's size is defined and constant
             username_header = client_socket.recv(HEADER_LENGTH)
 
@@ -69,44 +94,43 @@ while True:
             assert len(messageList) == 3
             uid = messageList[2]
             pnum = int(messageList[1])
-            if i % 10 ==0:#this will go away completely or be replaced with a check
-                nak = 'nak\n'+str(messageList[1])+'\n'+str(messageList[2])
-                nak = nak.encode('utf-8')
-                message_header = f"{len(message):<{HEADER_LENGTH}}".encode('utf-8')
-                client_socket.send(message_header + nak)
-                if uid not in missingMessages:
-                    missingMessages[uid] = []
-                    missingMessages[uid].append(pnum)
-                else:
-                    missingMessages[uid].append(pnum)
-            else:
-                #store in received messages
-                if uid in receivedDecodedMessages:
-                    haveSaved = False
-                    for el in receivedDecodedMessages[uid]:
-                        m = el.split()
-                        if int(m[1]) == pnum:
-                             haveSaved = True
-                             break
-                    if not haveSaved:
-                        receivedDecodedMessages[uid].append( message)
-                    else:
-                        print ('duplicate packet received',message)
-                else:
-                    receivedDecodedMessages[uid] = []
+            #store in received messages
+            if uid in receivedDecodedMessages:
+                haveSaved = False
+                for el in receivedDecodedMessages[uid]:
+                    m = el.split()
+                    if int(m[1]) == pnum:
+                            print('duplicate',m)
+                            haveSaved = True
+                            break
+                if not haveSaved:
                     receivedDecodedMessages[uid].append(message)
-                    
-                if uid not in messageKeys:
-                    messageKeys.append(uid)
-                if uid in missingMessages:
-                    print('uid in missing messages')
-                    while pnum in missingMessages[uid]:
-                        missingMessages[uid].remove(pnum)
-                        print('removing missing message', uid, pnum)
+                else:
+                    duplicateMessages+=1
+                    print('duplicate packet received',message)
+                    print('total duplicates',duplicateMessages)
+            else:
+                receivedDecodedMessages[uid] = []
+                receivedDecodedMessages[uid].append(message)
+
+            if uid in missingMessages:
+                while (pnum in missingMessages[uid]):
+                    missingMessages[uid].remove(pnum)
+                
+
+            if uid not in messageKeys:
+                if lastuuid != "":
+                    createMissingSet(lastuuid)
+                lastuuid = uid
+                
+                messageKeys.append(uid)
+
+            sendRequiredNaks()
+            time.sleep(.01)
 
             # Print message
             #print(f'{username} > {message}')
-            print(missingMessages)
+            #print(missingMessages)
 
     except IOError as e:
         # This is normal on non blocking connections - when there are no incoming data error is going to be raised

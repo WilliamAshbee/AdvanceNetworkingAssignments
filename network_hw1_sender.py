@@ -30,7 +30,7 @@ client_socket.send(username_header + username)
 packets = [ 150, 250, 450, 650, 850, 1000]
 
 def receive_naks(messageDict):
-    while True:
+    for i in range(10):
         # Receive our "header" containing username length, it's size is defined and constant
         username_header = client_socket.recv(HEADER_LENGTH)
 
@@ -52,15 +52,23 @@ def receive_naks(messageDict):
         uid = m[2]
         print (m)
         if 'nak' in m:
-            ind = (int) (m[1])
-            assert isinstance(ind,int)
-            message = messageDict[uid][ind] #should be message header + message
-            assert isinstance(message,bytes)
+            ind =  m[1]
+            #ind = ind -1 # adjust for 0 indicies
+            #assert isinstance(ind,int)
+            rm = None
+            print('ind',type(ind), ind)
+                
+            for message in messageDict[uid]: #should be message header + message
+                rind = message.decode('utf-8').split()[2]#header hasn't been removed so add 1 to normal indexing
+                if rind == ind:
+                    rm = message
+                    break
+            
             if 'nak' in message.decode('utf-8'):
                 print('sending a nak, error')
                 sys.exit()
-            print ('receivnaksresponse',message)
-            client_socket.send(message)
+            print ('receivnaksresponse',rm)
+            client_socket.send(rm)
             print('returning lost packet')
         else:
             # Print message
@@ -74,7 +82,7 @@ for packet in packets:
     assert lastUid!=uid
     #uid = uid.encode('utf-8')
     messageDict[uid] = []
-    for packet_number in range(packet):
+    for packet_number in range(1,packet+1,1):
         #time.sleep(.01)
 
         # Wait for user to input a message
